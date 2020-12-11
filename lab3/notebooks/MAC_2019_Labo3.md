@@ -326,12 +326,12 @@ Steps
         
         // Split the given string into an array of words (without any formatting), then return it.
         def tokenizeDescription(description: String): Seq[String] = {
-            // TODO student
+            return description.split(" ")
         }
         
         // Remove the blank spaces (trim) in the given word, transform it in lowercase, then return it.
         def normalizeWord(word: String): String = {
-            // TODO student
+            return word.trim().toLowerCase()
         }
         
         // For the sake of simplicity let's ignore the implementation (in a real case we would return true if w is a stopword, otherwise false).
@@ -347,11 +347,13 @@ Steps
         }
       
        // TODO student
-       // Here we are going to work on the movies RDD, by tokenizing and normalizing the description of every movie, then by building a key-value object that contains the tokens as keys, and the IDs of the movies as values
+       // Here we are going to work on the movies RDD, by tokenizing and normalizing the description of every movie, then by building a key-value object 
+       // that contains the tokens as keys, and the IDs of the movies as values
        // (see the example on 4).
        // The goal here is to do everything by chaining the possible transformations and actions of Spark.
        // Possible steps:
-       //   1) What we first want to do here is applying the 4 previous methods on any movie's description. Be aware of the fact that we also want to keep the IDs of the movies.
+       //   1) What we first want to do here is applying the 4 previous methods on any movie's description. Be aware of the fact that we also want to 
+       //       keep the IDs of the movies.
        //   2) For each tokenized word, create a tuple as (word, id), where id is the current movie id
        //        [
        //          ("toto", 120), ("mange", 120), ("des", 120), ("pommes", 120),
@@ -364,11 +366,24 @@ Steps
        //          ("mange", [120]),
        //          ...
        //        ]
-       val invertedIndex = ...
+       val invertedIndex = movies
+                            .flatMap(movie => tokenizeDescription(movie.description)
+                                        .map(word => (normalizeWord(word), movie.id)))
+                            .filter(movie => !isStopWord(movie._1))
+                            .map(movie => (applyStemming(movie._1), movie._2))
+                            .groupByKey()
 
+                            
+                            
+                            
+        
        // Return the new-built inverted index.
        invertedIndex
   }
+```
+
+```scala
+
 ```
 
 Now we would like to use our inverted index to display the top N most used words in the descriptions of movies.
@@ -381,7 +396,10 @@ def topN(invertedIndex: RDD[(String, Iterable[Int])], N: Int): Unit = {
   // We are going to work on the given invertedIndex array to do our analytic:
   //   1) Find a way to get the number of movie in which a word appears.
   //   2) Keep only the top N words and their occurence.
-  val topMovies = ...
+  val topMovies = invertedIndex
+                    .map(movie => (movie._1, movie._2.size))
+                    .sortBy(movie => movie._2, ascending=false)
+                    .take(N)
   
   // Print the words and the number of descriptions in which they appear.
   println("Top '" + N + "' most used words")
