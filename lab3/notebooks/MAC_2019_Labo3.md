@@ -435,6 +435,11 @@ For all of the following exercices, write your queries in two different ways:
 
 ```scala
 // TODO students
+moviesDF.printSchema()
+// je select que les titres pour une meilleure lisibilité
+val moviesTen = moviesDF.select("Title").limit(10)
+moviesTen.show()
+
 ```
 
 ### Exercice 2 - Get the movies (id, title, votes, director) whose title contains "City" 
@@ -447,18 +452,41 @@ Apply two different ways:
 
 ```scala
 // TODO students
+moviesDF.createOrReplaceTempView("movies")
+val cityMoviesSql = spark.sql("""SELECT rank, title, votes, director FROM movies WHERE title LIKE '%City%' """)
+cityMoviesSql.show()
+
+val cityMoviesDFApi = moviesDF.select("rank", "title", "votes", "director").where("title like '%City%'")
+cityMoviesDFApi.show()
 ```
 
 ### Exercice 3 - Get the number of movies which have a number of votes between 500 and 2000 (inclusive range)
 
 ```scala
 // TODO students
+moviesDF.createOrReplaceTempView("movies")
+val sql3 = spark.sql("""select count(*) as count
+                        from movies
+                        where votes >= 500
+                        and votes <= 2000""")
+sql3.show()
+
+val dFApi3 = moviesDF.select("*").where("votes >= 500 and votes <= 2000").count()
+println(dFApi3)
 ```
 
 ### Exercice 4 - Get the minimum, maximum and average rating of films per director. Sort the results by minimum rating.  
 
 ```scala
 // TODO students
+// résultats un peu différent il semblerait que l'ordre lors du tri au sein d'une même valeur ne soit pas le même
+moviesDF.createOrReplaceTempView("movies")
+val sql4 = spark.sql("""select director, min(rating) as min, max(rating), avg(rating) from movies group by director order by min""")
+
+sql4.show()
+
+val dFApi4 = moviesDF.groupBy("director").agg(min(col("rating")) as "min", max(col("rating")), avg(col("rating"))).orderBy(col("min"))
+dFApi4.show()
 ```
 
 <!-- #region -->
@@ -479,6 +507,15 @@ Apply two different ways:
 
 ```scala
 // TODO students
+moviesDF.createOrReplaceTempView("movies")
+val sql5 = spark.sql("select m1.title, m1.year, m1.rating from movies m1 join (select year, min(rating) as min from movies group by year) m2 on m2.year = m1.year and m2.min = m1.rating order by m1.year")
+sql5.show()
+
+// comment empêcher les duplicatats de colonnes?
+val dFtry = moviesDF.select("title", "rating", "year")
+val dFmin = moviesDF.groupBy(col("year").alias("minYear")).agg(min(col("rating")).alias("minRating"))
+val dFApi5 = dFtry.join(dFmin, dFmin("minYear") === dFtry("year") && dFmin("minRating") === dFtry("rating"))
+dFApi5.show()
 ```
 
 <!-- #region -->
